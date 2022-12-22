@@ -1,3 +1,5 @@
+from ntpath import join
+import base64
 import requests
 import time
 import json
@@ -66,7 +68,18 @@ def convert_tweet(sale_data):
 
 #Sends a tweet based on sale data and NFT metadata
 def send_tweet(api, client, sales_data):
-    image = requests.get(sales_data['thumbnail']['thumbnail'].replace("ipfs://", "https://ipfs.io/ipfs/")).content
+    thumbnail = sales_data['thumbnail']['thumbnail']
+    is_link = isinstance(thumbnail, str)
+    if is_link:
+        image = requests.get(thumbnail.replace("ipfs://", "https://ipfs.io/ipfs/")).content
+    else:
+        data = "".join(thumbnail)
+        [header, body] = data.split(",")
+        [_, encoding] = header.split(";")
+        if "base64" == encoding:
+            image = base64.b64decode(body)
+        else:
+            raise Exception(f"Unsuported onchain image data encoding '{encoding}'")
     filename = './tmp'
     with open(filename, 'wb') as handler:
         handler.write(image)
